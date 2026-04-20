@@ -99,7 +99,11 @@ async def handle_bot_message(event):
         print(f"[BOT] Получено:\n{text}\n")
         await client.disconnect()
     elif text.strip() in SMB_LIKED_YOU.strip():
-        client.forward_messages(YOUR_USERNAME, event.message)
+        msgs = await client.get_messages(event.message.peer_id, limit=2)
+        if len(msgs) > 1:
+            prev_msg = msgs[1]
+            await client.forward_messages(YOUR_USERNAME, prev_msg)
+        await client.forward_messages(YOUR_USERNAME, event.message)
 
 
     print(f"[BOT] Получено:\n{text}\n")
