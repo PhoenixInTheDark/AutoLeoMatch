@@ -3,6 +3,7 @@ import os
 import requests
 from dotenv import load_dotenv
 from telethon import TelegramClient, events
+from telethon.tl.types import MessageEntityTextUrl
 
 # Загрузить переменные из .env файла
 load_dotenv()
@@ -11,6 +12,7 @@ load_dotenv()
 API_ID = int(os.getenv("API_ID", "0"))
 API_HASH = os.getenv("API_HASH", "")
 BOT_USERNAME = os.getenv("BOT_USERNAME", "@leomatchbot")
+YOUR_USERNAME = os.getenv("YOUR_USERNAME", "")
 
 # LM Studio API
 LM_STUDIO_API_URL = os.getenv("LM_STUDIO_API_URL", "http://localhost:1234/api/v1/chat")
@@ -48,6 +50,8 @@ MATCH_PROMPT = """
 
 Верни ТОЛЬКО "match" или "no_match", ничего больше.
 """
+
+SMB_LIKED_YOU = "Отлично! Надеюсь хорошо проведете время 🙌"
 
 RESPONSE_MATCH = "❤️"
 RESPONSE_NO_MATCH = "👎"
@@ -94,6 +98,8 @@ async def handle_bot_message(event):
     elif text.strip() == TOO_MUCH_LIKES.strip():
         print(f"[BOT] Получено:\n{text}\n")
         await client.disconnect()
+    elif text.strip() in SMB_LIKED_YOU.strip():
+        client.forward_messages(YOUR_USERNAME, event.message)
 
 
     print(f"[BOT] Получено:\n{text}\n")
