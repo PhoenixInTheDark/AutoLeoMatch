@@ -128,7 +128,7 @@ async def main():
 ║         ⚡ AutoLeoMatch by Phoenix ⚡                   ║
 ║                                                            ║
 ║      Automated Dating Profile Analyzer & Swiper           ║
-║      Powered by Mistral-7B Neural Network                 ║
+║      Powered by any local LLM via LM Studio              ║
 ║                                                            ║
 ║  [>>>] Scanning... Analyzing... Matching...               ║
 ║                                                            ║
