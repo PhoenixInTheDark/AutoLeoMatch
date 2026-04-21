@@ -34,7 +34,7 @@
 ### 1. Клонирование репозитория
 
 ```bash
-git clone https://github.com/yourusername/leoAutoLike.git
+git clone https://github.com/PhoenixInTheDark//leoAutoLike.git
 cd leoAutoLike/v2
 ```
 
