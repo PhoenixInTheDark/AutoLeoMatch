@@ -15,15 +15,19 @@
 
 ## 📝 Последние обновления
 
-- ✅ Добавлена функция автоматической пересылки уведомлений о мэтчах в Saved Messages
-- ✅ Исправлена проблема совместимости с актуальной версией библиотеки Telethon
+- ✨ **Поддержка openRouter** — теперь можно использовать openRouter вместо локального LM Studio
+- ✅ **Автоматическая пересылка мэтчей** — получайте уведомления о совпадениях сразу в Saved Messages
+- 📤 **Пересылка ссылок понравившихся** — ссылки на все понравившиеся профили автоматически отправляются в Saved Messages
+- ✅ Исправлены различные баги и проблемы совместимости
 
 ## 📋 Требования
 
 - **Python 3.8+**
 - **Telegram Account** с API credentials
-- **LM Studio** запущен локально (http://localhost:1234)
-- Интернет соединение
+- **Интернет соединение**
+- **Одно из двух:**
+  - **LM Studio** запущен локально (http://localhost:1234) для локального анализа
+  - **OpenRouter API Key** для облачного анализа
 
 ## 🚀 Установка
 
@@ -71,9 +75,16 @@ API_HASH=your_api_hash_here
 # Бот для работы (не изменяйте)
 BOT_USERNAME=@leomatchbot
 
-# Локальный LM Studio сервер
+# Выбор AI провайдера: 'local' для LM Studio или 'openrouter' для OpenRouter
+AI_PROVIDER=local
+
+# Локальный LM Studio сервер (используется если AI_PROVIDER=local)
 LM_STUDIO_API_URL=http://localhost:1234/api/v1/chat
 LM_STUDIO_MODEL=mistral-7b-instruct-v0.1
+
+# OpenRouter (используется если AI_PROVIDER=openrouter)
+OPENROUTER_API_KEY=your_openrouter_api_key
+OPENROUTER_MODEL=mistralai/mistral-7b-instruct
 
 # Параметры работы
 MIN_PROFILE_LENGTH=30
