@@ -60,6 +60,7 @@ RESPONSE_MATCH = "❤️"
 RESPONSE_NO_MATCH = "👎"
 RESPONSE_SKIP = "1 🚀"
 SHOW_ME = "1. Показать."
+START = "/start"
 # =================
 
 client = TelegramClient("session", API_ID, API_HASH)
@@ -137,8 +138,17 @@ async def handle_bot_message(event):
     except Exception as e:
         print(f"[ERROR] {e}")
         return
+    
+    if text.strip() == "Нет такого варианта ответа":
+        await client.send_message(BOT_USERNAME, "/start")
+        await client.send_message(BOT_USERNAME, RESPONSE_SKIP)
+        return
+    elif text.strip() == SMB_LIKED_YOU.strip():
+        await client.send_message(BOT_USERNAME, SHOW_ME)
+        await client.send_message(BOT_USERNAME, RESPONSE_SKIP)
+        return
 
-    reply = RESPONSE_MATCH if is_match else (RESPONSE_SKIP if text == "Нет такого варианта ответа" else (SHOW_ME if text == SMB_LIKED_YOU.strip() else RESPONSE_NO_MATCH))
+    reply = RESPONSE_MATCH if is_match else RESPONSE_NO_MATCH
     print(f"[{'СОВПАДЕНИЕ' if is_match else 'не совпало'}] → {reply!r}\n")
 
     await asyncio.sleep(RESPONSE_DELAY)
