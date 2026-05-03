@@ -139,6 +139,7 @@ async def handle_bot_message(event):
         print(f"[ERROR] {e}")
         return
     
+    # обходим системные сообщения от бота и продолжаем свайпать
     if text.strip() == "Нет такого варианта ответа":
         await client.send_message(BOT_USERNAME, "/start")
         await client.send_message(BOT_USERNAME, RESPONSE_SKIP)
