@@ -39,6 +39,9 @@ TOO_MUCH_LIKES = '''
 
 Перейди на Premium и получи больше ❤️!
 '''
+TOO_MUCH_LIKES2 = '''
+Пока все, больше нет анкет для тебя, попробуй позже
+'''
 
 MATCH_PROMPT = """
 Ты анализируешь анкету с дейтинг бота.
@@ -109,7 +112,7 @@ async def handle_bot_message(event):
     text = event.message.text or ""
     if not text:
         return
-    elif text.strip() == TOO_MUCH_LIKES.strip():
+    elif text.strip() == TOO_MUCH_LIKES.strip() or text.strip() == TOO_MUCH_LIKES2.strip():
         print(f"[BOT] Получено:\n{text}\n")
         await client.disconnect()
         return
