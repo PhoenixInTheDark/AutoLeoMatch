@@ -69,23 +69,30 @@ cp .env.example .env
 Отредактируйте `.env` файл со своими данными:
 
 ```env
-# Ваши Telegram credentials
-API_ID=123456789
+# Telegram API Credentials
+# Получить на https://my.telegram.org/apps
+API_ID=your_api_id_here
 API_HASH=your_api_hash_here
 
-# Бот для работы (не изменяйте)
+# Бот для автолайков (не изменяйте)
 BOT_USERNAME=@leomatchbot
+YOUR_USERNAME=your_telegram_username_here
 
-# Выбор AI провайдера: 'local' для LM Studio или 'openrouter' для OpenRouter
-AI_PROVIDER=local
+# Выбор AI провайдера: true для OpenRouter или false для LM Studio
+USE_OPENROUTER=true
 
-# Локальный LM Studio сервер (используется если AI_PROVIDER=local)
+# OpenRouter API (используется если USE_OPENROUTER=true)
+# Получить на https://openrouter.ai
+# Рекомендуемые модели:
+# - google/gemma-4-31b-it:free (бесплатная, мощная)
+# - meta-llama/llama-3.1-8b-instruct (быстрая)
+# - meta-llama/llama-3.1-70b-instruct (очень мощная)
+OPENROUTER_API_KEY=your_openrouter_api_key_here
+OPENROUTER_MODEL=google/gemma-4-31b-it:free
+
+# LM Studio API (используется если USE_OPENROUTER=false)
 LM_STUDIO_API_URL=http://localhost:1234/api/v1/chat
 LM_STUDIO_MODEL=mistral-7b-instruct-v0.1
-
-# OpenRouter (используется если AI_PROVIDER=openrouter)
-OPENROUTER_API_KEY=your_openrouter_api_key
-OPENROUTER_MODEL=mistralai/mistral-7b-instruct
 
 # Параметры работы
 MIN_PROFILE_LENGTH=30
