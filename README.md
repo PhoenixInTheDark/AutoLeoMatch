@@ -1,96 +1,67 @@
-# ⚡ AutoLeoMatch by Phoenix
+# AutoLeoMatch by Phoenix
 
-Автоматизированный скрипт для анализа и свайпинга профилей в дейтинг-боте **LeoMatch** (дайвинчик) с использованием искусственного интеллекта.
+Автоматизированный Python-скрипт для анализа и свайпинга анкет в Telegram-боте **@leomatchbot** с использованием AI.
 
-## 🎯 Описание
+## Что умеет
 
-**AutoLeoMatch** — это мощный инструмент для автоматического анализа анкет в Telegram боте **@leomatchbot** с помощью локальной нейросети Mistral-7B. Скрипт:
+- Анализирует текст анкеты через OpenAI-compatible Chat Completions API или локальный LM Studio.
+- Ставит лайк, если анкета соответствует заданным критериям.
+- Пропускает неподходящие и слишком короткие анкеты.
+- Пересылает найденные мэтчи и уведомления о лайках в Saved Messages.
+- Обрабатывает системные сообщения LeoMatch и продолжает работу без зависания.
+- Останавливается при лимите лайков или когда бот сообщает, что анкет больше нет.
 
-- 🤖 Анализирует каждый профиль через AI модель
-- 💯 Автоматически ставит лайки (❤️) подходящим профилям
-- 👎 Отклоняет (👎) неподходящие профили
-- ⚡ Работает с высокой точностью благодаря строгим критериям отбора
-- 📬 Пересылает уведомления о мэтчах в Saved Messages
-- 🎨 Имеет красивый интерфейс с ASCII-артом
+## Требования
 
-## 📝 Последние обновления
+- Python 3.8+
+- Telegram account и API credentials с https://my.telegram.org/apps
+- Интернет-соединение
+- Один из AI-провайдеров:
+  - OpenRouter или другой OpenAI-compatible endpoint
+  - LM Studio с локально запущенным API
 
-- ✨ **Поддержка openRouter** — теперь можно использовать openRouter вместо локального LM Studio
-- ✅ **Автоматическая пересылка мэтчей** — получайте уведомления о совпадениях сразу в Saved Messages
-- 📤 **Пересылка ссылок понравившихся** — ссылки на все понравившиеся профили автоматически отправляются в Saved Messages
-- ✅ **Исправлен баг со скипом системных сообщений** — скрипт больше не зависает на служебных сообщениях бота и корректно их пропускает
-- ✅ Исправлены различные баги и проблемы совместимости
-
-## 📋 Требования
-
-- **Python 3.8+**
-- **Telegram Account** с API credentials
-- **Интернет соединение**
-- **Одно из двух:**
-  - **LM Studio** запущен локально (http://localhost:1234) для локального анализа
-  - **OpenRouter API Key** для облачного анализа
-
-## 🚀 Установка
-
-### 1. Клонирование репозитория
+## Установка
 
 ```bash
-git clone https://github.com/PhoenixInTheDark//leoAutoLike.git
-cd leoAutoLike/v2
-```
-
-### 2. Создание виртуального окружения
-
-```bash
+git clone https://github.com/PhoenixInTheDark/AutoLeoMatch.git
+cd AutoLeoMatch
 python3 -m venv venv
-source venv/bin/activate  # На Windows: venv\Scripts\activate
-```
-
-### 3. Установка зависимостей
-
-```bash
+source venv/bin/activate
 pip install -r requirements.txt
-```
-
-### 4. Настройка конфигурации
-
-#### Получение Telegram API credentials:
-
-1. Перейти на https://my.telegram.org/apps
-2. Создать приложение (если не создавали)
-3. Скопировать **API ID** и **API Hash**
-
-#### Настройка .env файла:
-
-```bash
 cp .env.example .env
 ```
 
-Отредактируйте `.env` файл со своими данными:
+На Windows активация окружения:
+
+```bash
+venv\Scripts\activate
+```
+
+## Настройка
+
+Заполните `.env` своими значениями:
 
 ```env
 # Telegram API Credentials
-# Получить на https://my.telegram.org/apps
 API_ID=your_api_id_here
 API_HASH=your_api_hash_here
 
-# Бот для автолайков (не изменяйте)
+# Бот для автолайков
 BOT_USERNAME=@leomatchbot
 YOUR_USERNAME=your_telegram_username_here
 
-# Выбор AI провайдера: true для OpenRouter или false для LM Studio
+# true - OpenRouter/OpenAI-compatible API, false - LM Studio
 USE_OPENROUTER=true
 
-# OpenRouter API (используется если USE_OPENROUTER=true)
-# Получить на https://openrouter.ai
-# Рекомендуемые модели:
-# - google/gemma-4-31b-it:free (бесплатная, мощная)
-# - meta-llama/llama-3.1-8b-instruct (быстрая)
-# - meta-llama/llama-3.1-70b-instruct (очень мощная)
+# OpenRouter/OpenAI-compatible API
 OPENROUTER_API_KEY=your_openrouter_api_key_here
 OPENROUTER_MODEL=google/gemma-4-31b-it:free
 
-# LM Studio API (используется если USE_OPENROUTER=false)
+# Опционально: endpoint совместимого сервиса.
+# Если не указан, код использует https://openrouter.io/api/v1
+BASE_URL=https://routerai.ru/api/v1
+
+# LM Studio API, если USE_OPENROUTER=false
 LM_STUDIO_API_URL=http://localhost:1234/api/v1/chat
 LM_STUDIO_MODEL=mistral-7b-instruct-v0.1
 
@@ -99,151 +70,105 @@ MIN_PROFILE_LENGTH=30
 RESPONSE_DELAY=1.5
 ```
 
-### 5. Запуск LM Studio
+`BASE_URL` нужен только если вы используете не стандартный OpenRouter endpoint или совместимый сервис. Для обычного OpenRouter можно удалить эту переменную из `.env`.
 
-Убедитесь, что **LM Studio** запущен и модель **mistral-7b-instruct-v0.1** загружена:
-
-```bash
-# LM Studio должен быть доступен на http://localhost:1234
-```
-
-## 🎮 Использование
-
-### Запуск скрипта
+## Запуск
 
 ```bash
 python dating_bot2.py
 ```
 
-Вы должны увидеть красивый баннер:
+При первом запуске Telethon может запросить авторизацию Telegram. После подключения скрипт слушает сообщения от `BOT_USERNAME` и отвечает лайком или дизлайком.
 
-```
-╔════════════════════════════════════════════════════════════╗
-║                                                            ║
-║         ⚡ AutoLeoMatch by Phoenix ⚡                   ║
-║                                                            ║
-║      Automated Dating Profile Analyzer & Swiper           ║
-║      Powered by Mistral-7B Neural Network                 ║
-║                                                            ║
-║  [>>>] Scanning... Analyzing... Matching...               ║
-║                                                            ║
-╚════════════════════════════════════════════════════════════╝
+Остановка:
+
+```text
+Ctrl+C
 ```
 
-### Остановка скрипта
+## Критерии отбора
 
-Нажмите **Ctrl+C** для плавного завершения работы. Скрипт отобразит:
+Текущий prompt лайкает только анкеты, где человек:
 
-```
-[STOP] Выключение скрипта... До встречи! 👋
-```
+- ищет отношения;
+- хочет длительного общения;
+- увлекается содержательными темами вроде IT, музыки или рисования;
+- не пишет бессмысленный или явно неподходящий текст.
 
-## 🧠 Критерии отбора
+Анкеты короче `MIN_PROFILE_LENGTH` символов автоматически отклоняются без запроса к модели.
 
-Скрипт ставит лайки ТОЛЬКО если профиль соответствует строгим критериям:
+## Проверка
 
-### ✅ Будет лайкнут если:
-- Человек активно развивается (учит языки, IT, музыку)
-- Имеет чёткие амбиции и высокие цели
-- Ведёт здоровый образ жизни (нет признаков потребительства)
-- В описании конкретная информация о себе, интересах, целях
-- Ищет отношения
+Быстрая локальная проверка синтаксиса:
 
-### ❌ Будет отклонен если:
-- Неясные цели и амбиции
-- Только фото без информации о себе
-- Признаки потребительского образа жизни
-- Банальное описание без деталей
-- Есть хоть малейшие сомнения
-
-**Скрипт преднамеренно консервативен — большинство профилей будут отклонены!**
-
-## 📊 Логирование
-
-При работе скрипт выводит информацию о каждом профиле:
-
-```
-[BOT] Получено:
-Ищу девушку 25-30 для серьёзных отношений...
-
-[СОВПАДЕНИЕ] → ❤️
+```bash
+python -m py_compile dating_bot2.py test_openrouter.py test_groq.py test_forward.py
 ```
 
-## 🔧 Структура проекта
+Проверка OpenRouter/OpenAI-compatible API:
 
-```
-v2/
-├── dating_bot2.py          # Основной скрипт
-├── .env.example            # Пример конфигурации
-├── .env                     # Ваша конфигурация (не коммитить!)
-├── .gitignore              # Git ignore rules
-├── requirements.txt        # Python зависимости
-└── README.md               # Этот файл
+```bash
+python test_openrouter.py
 ```
 
-## 📦 Зависимости
+Проверка Telegram-пересылки:
 
-- **telethon** — библиотека для работы с Telegram API
-- **requests** — HTTP клиент для работы с LM Studio API
-- **python-dotenv** — загрузка переменных из .env файла
-
-## ⚠️ Важные замечания
-
-### Безопасность
-- **Никогда** не коммитьте `.env` файл с реальными credentials
-- `.env` файл добавлен в `.gitignore`
-- Используйте только личные API credentials
-
-### Производительность
-- Первый запуск требует аутентификации в Telegram
-- LM Studio должен быть запущен для работы
-- Анализ каждого профиля занимает 2-10 секунд
-
-### Ограничения
-- Работает только с ботом **@leomatchbot**
-- Требует активного соединения с интернетом
-- LM Studio должен быть доступен локально
-
-## 🐛 Решение проблем
-
-### Ошибка: "Не удалось подключиться к LM Studio"
-```
-[ERROR] Не удалось подключиться к LM Studio. Убедитесь, что:
-  1. LM Studio запущен
-  2. Сервер API активен на http://127.0.0.1:1234
+```bash
+python test_forward.py
 ```
 
-**Решение:**
-1. Запустите LM Studio
-2. Проверьте, что модель загружена
-3. Убедитесь, что используется корректный URL в .env
+`test_groq.py` оставлен как отдельная ручная проверка Groq API. Основной бот сейчас напрямую Groq не использует.
 
-### Ошибка: "Не удалось подключиться к Telegram"
-**Решение:**
-1. Проверьте интернет соединение
-2. Убедитесь, что API_ID и API_HASH корректны
-3. Может потребоваться повторная аутентификация
+## Структура проекта
 
-### Скрипт лайкает всех подряд
-**Решение:**
-1. Проверьте, что LM Studio работает и возвращает корректные ответы
-2. Убедитесь, что модель `mistral-7b-instruct-v0.1` загружена
-3. Проверьте логи LM Studio
+```text
+AutoLeoMatch/
+├── dating_bot2.py       # Основной скрипт
+├── .env.example         # Пример конфигурации
+├── requirements.txt     # Python зависимости
+├── test_openrouter.py   # Ручная проверка OpenRouter/OpenAI-compatible API
+├── test_forward.py      # Ручная проверка Telegram-пересылки
+├── test_groq.py         # Ручная проверка Groq API
+└── README.md
+```
 
-## 📝 Лицензия
+## Зависимости
 
-MIT License - смотри LICENSE файл
+Основные библиотеки:
 
-## 👤 Автор
+- `telethon` для Telegram API
+- `openai` для OpenRouter и совместимых Chat Completions API
+- `requests` для LM Studio
+- `python-dotenv` для загрузки `.env`
 
-**Phoenix** — разработчик AutoLeoMatch
+## Решение проблем
 
-## 🙏 Благодарности
+### Не подключается к Telegram
 
-- **Телетон** (Telethon) — замечательная библиотека для Telegram API
-- **Mistral AI** — мощная и быстрая модель
-- **LM Studio** — удобный инструмент для локального запуска моделей
+Проверьте `API_ID`, `API_HASH`, интернет-соединение и наличие доступа к Telegram. При необходимости удалите старый `session` файл и авторизуйтесь заново.
 
----
+### Не работает OpenRouter или совместимый endpoint
 
-**Сделано с ❤️ для LeoMatch ботом**
+Проверьте `OPENROUTER_API_KEY`, `OPENROUTER_MODEL` и `BASE_URL`. Для стандартного OpenRouter удалите `BASE_URL` или установите:
+
+```env
+BASE_URL=https://openrouter.io/api/v1
+```
+
+### Не подключается LM Studio
+
+Если `USE_OPENROUTER=false`, убедитесь, что LM Studio запущен, API Server включен, модель загружена, а `LM_STUDIO_API_URL` указывает на правильный адрес.
+
+### Скрипт лайкает не тех людей
+
+Критерии находятся в `MATCH_PROMPT` внутри `dating_bot2.py`. Измените prompt и проверьте поведение на нескольких тестовых анкетах перед длительным запуском.
+
+## Безопасность
+
+- Не коммитьте `.env` с реальными ключами и Telegram credentials.
+- Используйте только свой Telegram account и свои API credentials.
+- Учитывайте правила Telegram и LeoMatch при автоматизации действий.
+
+## Лицензия
+
+MIT License.
