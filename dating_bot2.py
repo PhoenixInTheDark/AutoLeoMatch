@@ -18,9 +18,10 @@ USE_OPENROUTER = os.getenv("USE_OPENROUTER", "true").lower() == "true"
 
 if USE_OPENROUTER:
     OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
+    OPENROUTER_BASE_URL = os.getenv("BASE_URL", "https://openrouter.io/api/v1")
     openrouter_client = OpenAI(
         api_key=OPENROUTER_API_KEY,
-        base_url="https://openrouter.io/api/v1",
+        base_url=OPENROUTER_BASE_URL,
         timeout=120.0  # 2 минуты таймаут для OpenRouter
     )
     OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "meta-llama/llama-3.1-8b-instruct")
@@ -46,8 +47,8 @@ TOO_MUCH_LIKES2 = '''
 MATCH_PROMPT = """
 Ты анализируешь анкету с дейтинг бота.
 
-ЛАЙКАЙ ТОЛЬКО если человек не ищет отношения, хочет общаться на длительное время,
-увлекается высокодуховными и интересными вещами (IT, музыка, рисование и так далее), не пишет бред и грязь, и не зовет в чаты. ОСТАЛЬНОЕ ПРОПУСКАЙ.
+ЛАЙКАЙ ТОЛЬКО если человек ищет отношения, хочет общаться на длительное время,
+увлекается высокодуховными и интересными вещами (IT, музыка, рисование и так далее), не пишет бред.
 
 Верни ТОЛЬКО "match" или "no_match", ничего больше.
 """

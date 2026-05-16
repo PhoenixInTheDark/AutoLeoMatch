@@ -12,10 +12,12 @@ load_dotenv()
 # Получить конфиг из .env
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
 OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "meta-llama/llama-3.1-8b-instruct")
+OPENROUTER_BASE_URL = os.getenv("BASE_URL", "https://openrouter.io/api/v1")
 
 print(f"🧪 Тестирование OpenRouter API")
 print(f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
 print(f"Model: {OPENROUTER_MODEL}")
+print(f"Base URL: {OPENROUTER_BASE_URL}")
 print(f"API Key: {'✅ Найден' if OPENROUTER_API_KEY else '❌ НЕ НАЙДЕН'}")
 print()
 
@@ -27,7 +29,7 @@ if not OPENROUTER_API_KEY:
 try:
     client = OpenAI(
         api_key=OPENROUTER_API_KEY,
-        base_url="https://openrouter.io/api/v1",
+        base_url=OPENROUTER_BASE_URL,
         timeout=120.0  # 2 минуты таймаут
     )
     print("✅ OpenRouter клиент инициализирован")
