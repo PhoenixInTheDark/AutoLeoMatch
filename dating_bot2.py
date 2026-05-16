@@ -167,7 +167,7 @@ async def main():
 ║         ⚡ AutoLeoMatch by Phoenix ⚡                   ║
 ║                                                            ║
 ║      Automated Dating Profile Analyzer & Swiper           ║
-║      Powered by any local LLM via LM Studio              ║
+║      Works with any LLM or compatible API                ║
 ║                                                            ║
 ║  [>>>] Scanning... Analyzing... Matching...               ║
 ║                                                            ║
