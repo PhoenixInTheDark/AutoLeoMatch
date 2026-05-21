@@ -2,6 +2,19 @@
 
 Автоматизированный Python-скрипт для анализа и свайпинга анкет в Telegram-боте **@leomatchbot** с использованием AI.
 
+Проект работает через Telegram user session: скрипт подключается к вашему Telegram-аккаунту через Telethon, читает сообщения от LeoMatch и отправляет ответы от имени аккаунта.
+
+## Версии и ветки
+
+- `main` - обычная локальная версия для ручного запуска. Если LeoMatch сообщает о дневном лимите лайков или отсутствии анкет, скрипт завершает работу.
+- `version_for_server` - серверная версия для долгого фонового запуска на VPS, `tmux`, `screen`, `systemd` или другом process manager. При лимите лайков или отсутствии анкет скрипт ждет 1 час, снова запускает диалог и продолжает работу.
+
+Для локального использования обычно достаточно ветки `main`. Для постоянной работы на сервере используйте:
+
+```bash
+git checkout version_for_server
+```
+
 ## Что умеет
 
 - Анализирует текст анкеты через OpenAI-compatible Chat Completions API или локальный LM Studio.
@@ -9,7 +22,8 @@
 - Пропускает неподходящие и слишком короткие анкеты.
 - Пересылает найденные мэтчи и уведомления о лайках в Saved Messages.
 - Обрабатывает системные сообщения LeoMatch и продолжает работу без зависания.
-- Останавливается при лимите лайков или когда бот сообщает, что анкет больше нет.
+- В `main` останавливается при лимите лайков или когда бот сообщает, что анкет больше нет.
+- В `version_for_server` ждет и пытается продолжить работу позже.
 
 ## Требования
 
@@ -25,6 +39,17 @@
 ```bash
 git clone https://github.com/PhoenixInTheDark/AutoLeoMatch.git
 cd AutoLeoMatch
+```
+
+Если нужна серверная версия, переключитесь на ветку сразу после клонирования:
+
+```bash
+git checkout version_for_server
+```
+
+Затем установите зависимости:
+
+```bash
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
@@ -62,8 +87,8 @@ OPENROUTER_MODEL=google/gemma-4-31b-it:free
 BASE_URL=https://routerai.ru/api/v1
 
 # LM Studio API, если USE_OPENROUTER=false
-LM_STUDIO_API_URL=http://localhost:1234/api/v1/chat
-LM_STUDIO_MODEL=mistral-7b-instruct-v0.1
+# LM_STUDIO_API_URL=http://localhost:1234/api/v1/chat
+# LM_STUDIO_MODEL=mistral-7b-instruct-v0.1
 
 # Параметры работы
 MIN_PROFILE_LENGTH=30
@@ -80,11 +105,55 @@ python dating_bot2.py
 
 При первом запуске Telethon может запросить авторизацию Telegram. После подключения скрипт слушает сообщения от `BOT_USERNAME` и отвечает лайком или дизлайком.
 
+После успешной авторизации рядом со скриптом появится файл `session.session`. Он нужен для повторных запусков без ввода кода Telegram.
+
 Остановка:
 
 ```text
 Ctrl+C
 ```
+
+## Серверный запуск
+
+Для постоянной работы используйте ветку `version_for_server`.
+
+Перед запуском в фоне выполните скрипт один раз в интерактивной SSH-сессии, чтобы пройти авторизацию Telegram и создать `session.session`:
+
+```bash
+source venv/bin/activate
+python dating_bot2.py
+```
+
+После этого можно запускать скрипт в `tmux`:
+
+```bash
+tmux new -s autoleomatch
+cd /path/to/AutoLeoMatch
+source venv/bin/activate
+python dating_bot2.py
+```
+
+Или через `systemd`:
+
+```ini
+[Unit]
+Description=AutoLeoMatch
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/path/to/AutoLeoMatch
+ExecStart=/path/to/AutoLeoMatch/venv/bin/python /path/to/AutoLeoMatch/dating_bot2.py
+Restart=always
+RestartSec=10
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=multi-user.target
+```
+
+В `systemd` важно указать `WorkingDirectory` на каталог проекта, где лежит `session.session`.
 
 ## Критерии отбора
 
@@ -145,7 +214,11 @@ AutoLeoMatch/
 
 ### Не подключается к Telegram
 
-Проверьте `API_ID`, `API_HASH`, интернет-соединение и наличие доступа к Telegram. При необходимости удалите старый `session` файл и авторизуйтесь заново.
+Проверьте `API_ID`, `API_HASH`, интернет-соединение и наличие доступа к Telegram. При необходимости удалите старый `session.session` и авторизуйтесь заново.
+
+### systemd запускает сервис, но Telegram снова просит код
+
+Проверьте, что `WorkingDirectory` указывает на каталог проекта, где лежит `session.session`. Telethon ищет файл сессии относительно рабочей директории.
 
 ### Не работает OpenRouter или совместимый endpoint
 
@@ -166,6 +239,7 @@ BASE_URL=https://openrouter.io/api/v1
 ## Безопасность
 
 - Не коммитьте `.env` с реальными ключами и Telegram credentials.
+- Не коммитьте `session.session`: он дает доступ к авторизованной Telegram-сессии.
 - Используйте только свой Telegram account и свои API credentials.
 - Учитывайте правила Telegram и LeoMatch при автоматизации действий.
 
