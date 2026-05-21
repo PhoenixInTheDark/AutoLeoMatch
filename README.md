@@ -1,6 +1,9 @@
-# AutoLeoMatch by Phoenix
+# AutoLeoMatch Server Edition by Phoenix
 
-Автоматизированный Python-скрипт для анализа и свайпинга анкет в Telegram-боте **@leomatchbot** с использованием AI.
+Серверная ветка AutoLeoMatch для непрерывного запуска на VPS или выделенном сервере.
+Скрипт анализирует анкеты в Telegram-боте **@leomatchbot** через AI и автоматически отправляет лайк или дизлайк.
+
+Ветка `version_for_server` предназначена для долгой фоновой работы: бот не завершает работу при дневном лимите лайков или временном отсутствии анкет, а ждет и пытается продолжить свайпы позже.
 
 ## Что умеет
 
@@ -9,22 +12,26 @@
 - Пропускает неподходящие и слишком короткие анкеты.
 - Пересылает найденные мэтчи и уведомления о лайках в Saved Messages.
 - Обрабатывает системные сообщения LeoMatch и продолжает работу без зависания.
-- Останавливается при лимите лайков или когда бот сообщает, что анкет больше нет.
+- При лимите лайков или отсутствии анкет ждет 1 час, запускает диалог заново и продолжает работу.
+- Подходит для запуска в `tmux`, `screen`, `systemd` или другом process manager на сервере.
 
 ## Требования
 
 - Python 3.8+
 - Telegram account и API credentials с https://my.telegram.org/apps
-- Интернет-соединение
+- Постоянное интернет-соединение
 - Один из AI-провайдеров:
   - OpenRouter или другой OpenAI-compatible endpoint
   - LM Studio с локально запущенным API
+
+Для серверного режима удобнее использовать OpenRouter или другой внешний OpenAI-compatible endpoint. LM Studio подходит только если модель и локальный API постоянно доступны на том же сервере.
 
 ## Установка
 
 ```bash
 git clone https://github.com/PhoenixInTheDark/AutoLeoMatch.git
 cd AutoLeoMatch
+git checkout version_for_server
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
@@ -70,21 +77,110 @@ MIN_PROFILE_LENGTH=30
 RESPONSE_DELAY=1.5
 ```
 
-`BASE_URL` нужен только если вы используете не стандартный OpenRouter endpoint или совместимый сервис. Для обычного OpenRouter можно удалить эту переменную из `.env`.
+`BASE_URL` нужен только если вы используете не стандартный OpenRouter endpoint или совместимый сервис. Для обычного OpenRouter можно удалить эту переменную из `.env` или установить:
 
-## Запуск
+```env
+BASE_URL=https://openrouter.io/api/v1
+```
+
+## Первый запуск и авторизация Telegram
+
+Перед запуском в фоне выполните скрипт один раз в интерактивной SSH-сессии:
 
 ```bash
+source venv/bin/activate
 python dating_bot2.py
 ```
 
-При первом запуске Telethon может запросить авторизацию Telegram. После подключения скрипт слушает сообщения от `BOT_USERNAME` и отвечает лайком или дизлайком.
+При первом запуске Telethon попросит войти в Telegram: ввести номер телефона, код подтверждения и, если включена двухфакторная защита, пароль. После успешной авторизации рядом со скриптом появится файл `session.session`.
 
-Остановка:
+Сохраните этот файл на сервере. Он нужен для последующих запусков без повторного ввода кода Telegram.
+
+Остановка интерактивного запуска:
 
 ```text
 Ctrl+C
 ```
+
+## Запуск на сервере
+
+### Вариант 1: tmux
+
+```bash
+tmux new -s autoleomatch
+cd /path/to/AutoLeoMatch
+source venv/bin/activate
+python dating_bot2.py
+```
+
+Отключиться от сессии, оставив скрипт работать:
+
+```text
+Ctrl+B, затем D
+```
+
+Вернуться к логам:
+
+```bash
+tmux attach -t autoleomatch
+```
+
+### Вариант 2: systemd
+
+Создайте сервис:
+
+```bash
+sudo nano /etc/systemd/system/autoleomatch.service
+```
+
+Пример unit-файла:
+
+```ini
+[Unit]
+Description=AutoLeoMatch Server Edition
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/path/to/AutoLeoMatch
+ExecStart=/path/to/AutoLeoMatch/venv/bin/python /path/to/AutoLeoMatch/dating_bot2.py
+Restart=always
+RestartSec=10
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Замените `/path/to/AutoLeoMatch` на реальный путь к проекту, затем включите сервис:
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable autoleomatch
+sudo systemctl start autoleomatch
+```
+
+Проверка статуса и логов:
+
+```bash
+sudo systemctl status autoleomatch
+journalctl -u autoleomatch -f
+```
+
+## Поведение в непрерывном режиме
+
+После подключения скрипт слушает сообщения от `BOT_USERNAME` и отвечает лайком или дизлайком.
+
+Если LeoMatch сообщает о дневном лимите лайков или об отсутствии анкет, скрипт:
+
+1. пишет сообщение в лог;
+2. ждет 1 час;
+3. отправляет `/start`;
+4. переходит к следующей анкете;
+5. продолжает работу без ручного вмешательства.
+
+Если процесс завершился из-за ошибки окружения, `systemd` перезапустит его автоматически при настройке `Restart=always`.
 
 ## Критерии отбора
 
@@ -96,6 +192,8 @@ Ctrl+C
 - не пишет бессмысленный или явно неподходящий текст.
 
 Анкеты короче `MIN_PROFILE_LENGTH` символов автоматически отклоняются без запроса к модели.
+
+Критерии находятся в `MATCH_PROMPT` внутри `dating_bot2.py`. После изменения prompt лучше проверить поведение на нескольких тестовых анкетах перед длительным запуском.
 
 ## Проверка
 
@@ -145,7 +243,11 @@ AutoLeoMatch/
 
 ### Не подключается к Telegram
 
-Проверьте `API_ID`, `API_HASH`, интернет-соединение и наличие доступа к Telegram. При необходимости удалите старый `session` файл и авторизуйтесь заново.
+Проверьте `API_ID`, `API_HASH`, интернет-соединение и наличие доступа к Telegram. При необходимости удалите старый `session.session` и авторизуйтесь заново.
+
+### systemd запускает сервис, но Telegram снова просит код
+
+Проверьте, что `WorkingDirectory` указывает на каталог проекта, где лежит `session.session`. Telethon ищет файл сессии относительно рабочей директории.
 
 ### Не работает OpenRouter или совместимый endpoint
 
@@ -166,6 +268,7 @@ BASE_URL=https://openrouter.io/api/v1
 ## Безопасность
 
 - Не коммитьте `.env` с реальными ключами и Telegram credentials.
+- Не коммитьте `session.session`: он дает доступ к авторизованной Telegram-сессии.
 - Используйте только свой Telegram account и свои API credentials.
 - Учитывайте правила Telegram и LeoMatch при автоматизации действий.
 
