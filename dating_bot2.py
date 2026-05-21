@@ -65,6 +65,7 @@ RESPONSE_NO_MATCH = "👎"
 RESPONSE_SKIP = "1 🚀"
 SHOW_ME = "1. Показать."
 START = "/start"
+LIKE_LIMIT_RETRY_DELAY = 60 * 60
 # =================
 
 client = TelegramClient("session", API_ID, API_HASH)
@@ -115,7 +116,12 @@ async def handle_bot_message(event):
         return
     elif text.strip() == TOO_MUCH_LIKES.strip() or text.strip() == TOO_MUCH_LIKES2.strip():
         print(f"[BOT] Получено:\n{text}\n")
-        await client.disconnect()
+        print("\n[SYSTEM MESSAGE] лимит лайков превышен. Ждем 1 час...\n")
+        await asyncio.sleep(LIKE_LIMIT_RETRY_DELAY)
+        print("\n[SYSTEM MESSAGE] пробуем продолжить свайпы...\n")
+        await client.send_message(BOT_USERNAME, START)
+        await asyncio.sleep(RESPONSE_DELAY)
+        await client.send_message(BOT_USERNAME, RESPONSE_SKIP)
         return
     elif FINE_SMB_LIKED_YOU.strip() in text.strip():
         print(f"[BOT] Получено:\n{text}\n")
