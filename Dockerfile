@@ -1,0 +1,13 @@
+FROM python:alpine
+
+WORKDIR /app
+
+COPY requirements.txt .
+
+RUN pip install -r requirements.txt
+
+COPY . .
+
+CMD ["python", "dating_bot2.py"]
+
+

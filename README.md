@@ -13,13 +13,14 @@
 - Пересылает найденные мэтчи и уведомления о лайках в Saved Messages.
 - Обрабатывает системные сообщения LeoMatch и продолжает работу без зависания.
 - При лимите лайков или отсутствии анкет ждет 1 час, запускает диалог заново и продолжает работу.
-- Подходит для запуска в `tmux`, `screen`, `systemd` или другом process manager на сервере.
+- Подходит для запуска в `tmux`, `screen`, `systemd`, Docker Compose или другом process manager на сервере.
 
 ## Требования
 
 - Python 3.8+
 - Telegram account и API credentials с https://my.telegram.org/apps
 - Постоянное интернет-соединение
+- Docker и Docker Compose, если нужен запуск в контейнере
 - Один из AI-провайдеров:
   - OpenRouter или другой OpenAI-compatible endpoint
   - LM Studio с локально запущенным API
@@ -168,6 +169,44 @@ sudo systemctl status autoleomatch
 journalctl -u autoleomatch -f
 ```
 
+### Вариант 3: Docker Compose
+
+Заполните `.env`, затем соберите образ:
+
+```bash
+docker-compose build
+```
+
+Если файла `session.session` еще нет, создайте его через одноразовый интерактивный запуск контейнера:
+
+```bash
+docker-compose run --rm bot
+```
+
+При первом запуске Telethon попросит войти в Telegram: ввести номер телефона, код подтверждения и, если включена двухфакторная защита, пароль. После успешной авторизации рядом с `dating_bot2.py` появится файл `session.session`.
+
+Остановите интерактивный запуск через `Ctrl+C`, затем запустите контейнер в фоне:
+
+```bash
+docker-compose up -d
+```
+
+Логи контейнера:
+
+```bash
+docker-compose logs -f bot
+```
+
+Остановка:
+
+```bash
+docker-compose down
+```
+
+Если у вас установлен новый Docker Compose Plugin, вместо `docker-compose` можно использовать `docker compose`.
+
+Текущий `docker-compose.yml` монтирует каталог проекта в контейнер как `/app`. Поэтому `session.session` хранится на хосте рядом с кодом, не копируется в Docker-образ и переживает пересборку контейнера. `.env` передается в контейнер через `env_file`, а `.dockerignore` не дает секретам и файлам сессии попасть в образ при сборке.
+
 ## Поведение в непрерывном режиме
 
 После подключения скрипт слушает сообщения от `BOT_USERNAME` и отвечает лайком или дизлайком.
@@ -180,7 +219,7 @@ journalctl -u autoleomatch -f
 4. переходит к следующей анкете;
 5. продолжает работу без ручного вмешательства.
 
-Если процесс завершился из-за ошибки окружения, `systemd` перезапустит его автоматически при настройке `Restart=always`.
+Если процесс завершился из-за ошибки окружения, `systemd` перезапустит его автоматически при настройке `Restart=always`. При запуске через Docker Compose перезапуск выполняется политикой `restart: unless-stopped`.
 
 ## Критерии отбора
 
@@ -222,6 +261,9 @@ python test_forward.py
 ```text
 AutoLeoMatch/
 ├── dating_bot2.py       # Основной скрипт
+├── Dockerfile           # Образ для запуска бота в контейнере
+├── docker-compose.yml   # Запуск через Docker Compose
+├── .dockerignore        # Исключения для Docker build context
 ├── .env.example         # Пример конфигурации
 ├── requirements.txt     # Python зависимости
 ├── test_openrouter.py   # Ручная проверка OpenRouter/OpenAI-compatible API
@@ -248,6 +290,17 @@ AutoLeoMatch/
 ### systemd запускает сервис, но Telegram снова просит код
 
 Проверьте, что `WorkingDirectory` указывает на каталог проекта, где лежит `session.session`. Telethon ищет файл сессии относительно рабочей директории.
+
+### Docker Compose запускает контейнер, но Telegram снова просит код
+
+Проверьте, что в `docker-compose.yml` каталог проекта смонтирован в `/app`:
+
+```yaml
+volumes:
+  - .:/app
+```
+
+Файл `session.session` должен лежать рядом с `dating_bot2.py` на хосте. Если его нет, создайте сессию через `docker-compose run --rm bot` и пройдите интерактивную авторизацию Telegram.
 
 ### Не работает OpenRouter или совместимый endpoint
 
