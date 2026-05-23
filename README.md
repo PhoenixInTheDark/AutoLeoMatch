@@ -1,5 +1,9 @@
 # AutoLeoMatch by Phoenix
 
+<p align="center">
+  <img src="logo.jpg" alt="AutoLeoMatch logo" width="240">
+</p>
+
 Автоматизированный Python-скрипт для анализа и свайпинга анкет в Telegram-боте **@leomatchbot** с использованием AI.
 
 Проект работает через Telegram user session: скрипт подключается к вашему Telegram-аккаунту через Telethon, читает сообщения от LeoMatch и отправляет ответы от имени аккаунта.
