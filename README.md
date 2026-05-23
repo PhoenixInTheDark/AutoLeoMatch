@@ -1,5 +1,9 @@
 # AutoLeoMatch Server Edition by Phoenix
 
+<p align="center">
+  <img src="logo.jpg" alt="AutoLeoMatch logo" width="240">
+</p>
+
 Серверная ветка AutoLeoMatch для непрерывного запуска на VPS или выделенном сервере.
 Скрипт анализирует анкеты в Telegram-боте **@leomatchbot** через AI и автоматически отправляет лайк или дизлайк.
 
