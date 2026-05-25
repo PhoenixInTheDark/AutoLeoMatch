@@ -332,3 +332,340 @@ BASE_URL=https://openrouter.io/api/v1
 ## Лицензия
 
 MIT License.
+
+---
+
+# AutoLeoMatch Server Edition by Phoenix
+
+<p align="center">
+  <img src="logo.jpg" alt="AutoLeoMatch logo" width="240">
+</p>
+
+Server-focused AutoLeoMatch branch for continuous use on a VPS or dedicated server.
+The script analyzes profiles in the Telegram bot **@leomatchbot** with AI and automatically sends a like or dislike.
+
+The `version_for_server` branch is designed for long-running background operation: the bot does not stop when the daily like limit is reached or when profiles are temporarily unavailable. Instead, it waits and tries to continue swiping later.
+
+## Features
+
+- Analyzes profile text through an OpenAI-compatible Chat Completions API or local LM Studio.
+- Sends a like when a profile matches the configured criteria.
+- Skips unsuitable and very short profiles.
+- Forwards found matches and like notifications to Saved Messages.
+- Handles LeoMatch system messages and keeps running without hanging.
+- When the like limit is reached or no profiles are available, waits for 1 hour, starts the dialog again, and continues.
+- Suitable for running in `tmux`, `screen`, `systemd`, Docker Compose, or another process manager on a server.
+
+## Requirements
+
+- Python 3.8+
+- Telegram account and API credentials from https://my.telegram.org/apps
+- Stable internet connection
+- Docker and Docker Compose, if you want to run it in a container
+- One of the AI providers:
+  - OpenRouter or another OpenAI-compatible endpoint
+  - LM Studio with a locally running API
+
+For server mode, OpenRouter or another external OpenAI-compatible endpoint is usually more convenient. LM Studio is suitable only if the model and local API are always available on the same server.
+
+## Installation
+
+```bash
+git clone https://github.com/PhoenixInTheDark/AutoLeoMatch.git
+cd AutoLeoMatch
+git checkout version_for_server
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env
+```
+
+On Windows, activate the environment with:
+
+```bash
+venv\Scripts\activate
+```
+
+## Configuration
+
+Fill `.env` with your own values:
+
+```env
+# Telegram API Credentials
+API_ID=your_api_id_here
+API_HASH=your_api_hash_here
+
+# Bot for automatic likes
+BOT_USERNAME=@leomatchbot
+YOUR_USERNAME=your_telegram_username_here
+
+# true - OpenRouter/OpenAI-compatible API, false - LM Studio
+USE_OPENROUTER=true
+
+# OpenRouter/OpenAI-compatible API
+OPENROUTER_API_KEY=your_openrouter_api_key_here
+OPENROUTER_MODEL=google/gemma-4-31b-it:free
+
+# Optional: compatible service endpoint.
+# If not set, the code uses https://openrouter.io/api/v1
+BASE_URL=https://routerai.ru/api/v1
+
+# LM Studio API, if USE_OPENROUTER=false
+LM_STUDIO_API_URL=http://localhost:1234/api/v1/chat
+LM_STUDIO_MODEL=mistral-7b-instruct-v0.1
+
+# Runtime settings
+MIN_PROFILE_LENGTH=30
+RESPONSE_DELAY=1.5
+```
+
+`BASE_URL` is needed only if you use a non-default OpenRouter endpoint or another compatible service. For regular OpenRouter, you can remove this variable from `.env` or set it to:
+
+```env
+BASE_URL=https://openrouter.io/api/v1
+```
+
+## First Run and Telegram Authorization
+
+Before running the script in the background, start it once in an interactive SSH session:
+
+```bash
+source venv/bin/activate
+python dating_bot2.py
+```
+
+On the first run, Telethon will ask you to log in to Telegram: enter your phone number, confirmation code, and, if two-factor authentication is enabled, your password. After successful authorization, a `session.session` file will appear next to the script.
+
+Keep this file on the server. It is required for later runs without entering the Telegram code again.
+
+Stop the interactive run with:
+
+```text
+Ctrl+C
+```
+
+## Running on a Server
+
+### Option 1: tmux
+
+```bash
+tmux new -s autoleomatch
+cd /path/to/AutoLeoMatch
+source venv/bin/activate
+python dating_bot2.py
+```
+
+Detach from the session while keeping the script running:
+
+```text
+Ctrl+B, then D
+```
+
+Return to the logs:
+
+```bash
+tmux attach -t autoleomatch
+```
+
+### Option 2: systemd
+
+Create a service:
+
+```bash
+sudo nano /etc/systemd/system/autoleomatch.service
+```
+
+Example unit file:
+
+```ini
+[Unit]
+Description=AutoLeoMatch Server Edition
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/path/to/AutoLeoMatch
+ExecStart=/path/to/AutoLeoMatch/venv/bin/python /path/to/AutoLeoMatch/dating_bot2.py
+Restart=always
+RestartSec=10
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Replace `/path/to/AutoLeoMatch` with the real path to the project, then enable the service:
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable autoleomatch
+sudo systemctl start autoleomatch
+```
+
+Check status and logs:
+
+```bash
+sudo systemctl status autoleomatch
+journalctl -u autoleomatch -f
+```
+
+### Option 3: Docker Compose
+
+Fill `.env`, then build the image:
+
+```bash
+docker-compose build
+```
+
+If `session.session` does not exist yet, create it with a one-time interactive container run:
+
+```bash
+docker-compose run --rm bot
+```
+
+On the first run, Telethon will ask you to log in to Telegram: enter your phone number, confirmation code, and, if two-factor authentication is enabled, your password. After successful authorization, a `session.session` file will appear next to `dating_bot2.py`.
+
+Stop the interactive run with `Ctrl+C`, then start the container in the background:
+
+```bash
+docker-compose up -d
+```
+
+Container logs:
+
+```bash
+docker-compose logs -f bot
+```
+
+Stop it with:
+
+```bash
+docker-compose down
+```
+
+If you have the newer Docker Compose Plugin installed, you can use `docker compose` instead of `docker-compose`.
+
+The current `docker-compose.yml` mounts the project directory into the container as `/app`. Therefore, `session.session` is stored on the host next to the code, is not copied into the Docker image, and survives container rebuilds. `.env` is passed into the container through `env_file`, while `.dockerignore` prevents secrets and session files from being included in the image during build.
+
+## Continuous Mode Behavior
+
+After connecting, the script listens for messages from `BOT_USERNAME` and responds with likes or dislikes.
+
+If LeoMatch reports that the daily like limit has been reached or that no profiles are available, the script:
+
+1. writes a message to the log;
+2. waits for 1 hour;
+3. sends `/start`;
+4. moves to the next profile;
+5. continues without manual intervention.
+
+If the process exits because of an environment error, `systemd` will restart it automatically when `Restart=always` is configured. When running through Docker Compose, restart is handled by the `restart: unless-stopped` policy.
+
+## Selection Criteria
+
+The current prompt likes only profiles where the person:
+
+- is looking for a relationship;
+- wants long-term communication;
+- is interested in meaningful topics such as IT, music, or drawing;
+- does not write meaningless or clearly unsuitable text.
+
+Profiles shorter than `MIN_PROFILE_LENGTH` characters are rejected automatically without sending a request to the model.
+
+The criteria are stored in `MATCH_PROMPT` inside `dating_bot2.py`. After changing the prompt, it is better to test the behavior on several sample profiles before a long-running launch.
+
+## Checks
+
+Quick local syntax check:
+
+```bash
+python -m py_compile dating_bot2.py test_openrouter.py test_groq.py test_forward.py
+```
+
+Check the OpenRouter/OpenAI-compatible API:
+
+```bash
+python test_openrouter.py
+```
+
+Check Telegram forwarding:
+
+```bash
+python test_forward.py
+```
+
+`test_groq.py` is kept as a separate manual Groq API check. The main bot does not currently use Groq directly.
+
+## Project Structure
+
+```text
+AutoLeoMatch/
+├── dating_bot2.py       # Main script
+├── Dockerfile           # Image for running the bot in a container
+├── docker-compose.yml   # Docker Compose launch
+├── .dockerignore        # Docker build context exclusions
+├── .env.example         # Configuration example
+├── requirements.txt     # Python dependencies
+├── test_openrouter.py   # Manual OpenRouter/OpenAI-compatible API check
+├── test_forward.py      # Manual Telegram forwarding check
+├── test_groq.py         # Manual Groq API check
+└── README.md
+```
+
+## Dependencies
+
+Main libraries:
+
+- `telethon` for the Telegram API
+- `openai` for OpenRouter and compatible Chat Completions APIs
+- `requests` for LM Studio
+- `python-dotenv` for loading `.env`
+
+## Troubleshooting
+
+### Cannot Connect to Telegram
+
+Check `API_ID`, `API_HASH`, your internet connection, and Telegram access. If necessary, delete the old `session.session` file and authorize again.
+
+### systemd Starts the Service, but Telegram Asks for the Code Again
+
+Check that `WorkingDirectory` points to the project directory where `session.session` is stored. Telethon looks for the session file relative to the working directory.
+
+### Docker Compose Starts the Container, but Telegram Asks for the Code Again
+
+Check that the project directory is mounted into `/app` in `docker-compose.yml`:
+
+```yaml
+volumes:
+  - .:/app
+```
+
+The `session.session` file must be next to `dating_bot2.py` on the host. If it is missing, create the session with `docker-compose run --rm bot` and complete the interactive Telegram authorization.
+
+### OpenRouter or a Compatible Endpoint Does Not Work
+
+Check `OPENROUTER_API_KEY`, `OPENROUTER_MODEL`, and `BASE_URL`. For standard OpenRouter, remove `BASE_URL` or set it to:
+
+```env
+BASE_URL=https://openrouter.io/api/v1
+```
+
+### Cannot Connect to LM Studio
+
+If `USE_OPENROUTER=false`, make sure LM Studio is running, the API Server is enabled, the model is loaded, and `LM_STUDIO_API_URL` points to the correct address.
+
+### The Script Likes the Wrong People
+
+The criteria are stored in `MATCH_PROMPT` inside `dating_bot2.py`. Change the prompt and test the behavior on several sample profiles before a long-running launch.
+
+## Security
+
+- Do not commit `.env` with real keys or Telegram credentials.
+- Do not commit `session.session`: it grants access to the authorized Telegram session.
+- Use only your own Telegram account and your own API credentials.
+- Follow Telegram and LeoMatch rules when automating actions.
+
+## License
+
+MIT License.
